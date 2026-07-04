@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const frameCount = 228;
 const currentFrame = index => (
-  `${import.meta.env.BASE_URL}sequence/ezgif-frame-${index.toString().padStart(3, '0')}.png`
+  `${import.meta.env.BASE_URL}sequence/ezgif-frame-${index.toString().padStart(3, '0')}.webp`
 );
 
 export default function SequenceBackground({ onLoaded }) {
@@ -18,6 +18,7 @@ export default function SequenceBackground({ onLoaded }) {
     // Preload images
     let loadedCount = 0;
     const loadedImages = [];
+    const PRELOAD_THRESHOLD = Math.min(30, frameCount);
     
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
@@ -25,8 +26,7 @@ export default function SequenceBackground({ onLoaded }) {
       
       const onImageLoadOrError = () => {
         loadedCount++;
-        if (loadedCount === frameCount) {
-          setImages(loadedImages);
+        if (loadedCount === PRELOAD_THRESHOLD) {
           if (onLoaded) onLoaded();
         }
       };
@@ -36,6 +36,7 @@ export default function SequenceBackground({ onLoaded }) {
       
       loadedImages.push(img);
     }
+    setImages(loadedImages);
   }, [onLoaded]);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function SequenceBackground({ onLoaded }) {
     const context = canvas.getContext('2d');
     
     const render = (img) => {
+      if (!img || !img.complete || img.width === 0) return;
       // Clear and draw image scaled to cover the canvas
       context.clearRect(0, 0, canvas.width, canvas.height);
       const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
@@ -53,11 +55,15 @@ export default function SequenceBackground({ onLoaded }) {
       context.drawImage(img, x, y, img.width * scale, img.height * scale);
     };
 
-    // Draw first frame immediately
+    // Draw first frame immediately once loaded
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      render(images[0]);
+      if (images[0] && images[0].complete) {
+        render(images[0]);
+      } else if (images[0]) {
+        images[0].addEventListener('load', () => render(images[0]));
+      }
     };
     window.addEventListener('resize', handleResize);
     handleResize();
