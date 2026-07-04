@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const frameCount = 228;
 const currentFrame = index => (
-  `/sequence/ezgif-frame-${index.toString().padStart(3, '0')}.png`
+  `${import.meta.env.BASE_URL}sequence/ezgif-frame-${index.toString().padStart(3, '0')}.png`
 );
 
 export default function SequenceBackground({ onLoaded }) {
@@ -22,13 +22,18 @@ export default function SequenceBackground({ onLoaded }) {
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = currentFrame(i);
-      img.onload = () => {
+      
+      const onImageLoadOrError = () => {
         loadedCount++;
         if (loadedCount === frameCount) {
           setImages(loadedImages);
           if (onLoaded) onLoaded();
         }
       };
+
+      img.onload = onImageLoadOrError;
+      img.onerror = onImageLoadOrError;
+      
       loadedImages.push(img);
     }
   }, [onLoaded]);
